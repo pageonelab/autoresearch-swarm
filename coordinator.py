@@ -35,14 +35,44 @@ from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from typing import Any, Optional
 
+
+def _normalize_base_url(value: str) -> str:
+    """
+    Normalize swarm base URL.
+
+    Supports:
+      - host root: https://dl-api-dev.vhrgateway.com/
+      - full path: https://dl-api-dev.vhrgateway.com/api/swarm
+    """
+    base = (value or "").strip()
+    if not base:
+        base = "https://dl-api-dev.vhrgateway.com/"
+
+    parsed = urllib.parse.urlparse(base)
+    if parsed.scheme and parsed.netloc:
+        path = (parsed.path or "").rstrip("/")
+        if path == "":
+            path = "/api/swarm"
+        elif path == "/api":
+            path = "/api/swarm"
+
+        return urllib.parse.urlunparse(
+            parsed._replace(path=path, params="", query="", fragment="")
+        ).rstrip("/")
+
+    return base.rstrip("/")
+
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-API_BASE_URL = os.environ.get(
-    "WIZWAND_SWARM_API_BASE_URL",
-    os.environ.get("SWARM_API_BASE_URL", "http://127.0.0.1:8002/api/swarm"),
-).rstrip("/")
+API_BASE_URL = _normalize_base_url(
+    os.environ.get(
+        "WIZWAND_SWARM_API_BASE_URL",
+        os.environ.get("SWARM_API_BASE_URL", "https://dl-api-dev.vhrgateway.com/"),
+    )
+)
 KEY_FILE = ".autoresearch-key"
 
 CLAIM_SIMILARITY_THRESHOLD = 0.92
@@ -131,6 +161,8 @@ def swarm_request(
     timeout: int = 30,
 ) -> dict[str, Any]:
     """HTTP JSON request helper for Wizwand swarm API."""
+    base_url = _normalize_base_url(base_url)
+
     if query:
         filtered = {k: v for k, v in query.items() if v is not None and v != ""}
         if filtered:
@@ -248,7 +280,7 @@ class Coordinator:
     """Synchronous coordinator for collaborative autoresearch on Wizwand Swarm."""
 
     def __init__(self, api_key: Optional[str] = None, api_base_url: Optional[str] = None):
-        self.api_base_url = (api_base_url or API_BASE_URL).rstrip("/")
+        self.api_base_url = _normalize_base_url(api_base_url or API_BASE_URL)
         self.api_key = api_key or _get_api_key()
 
         # Human-readable codename (from /agents/me name field).

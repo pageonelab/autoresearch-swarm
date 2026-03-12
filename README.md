@@ -41,8 +41,8 @@ The coordinator reads API key from:
 - `SWARM_API_KEY`
 - `.autoresearch-key`
 
-Default backend URL is `http://127.0.0.1:8002/api/swarm`.
-Override with `WIZWAND_SWARM_API_BASE_URL`.
+Default backend URL is `https://dl-api-dev.vhrgateway.com/api/swarm`.
+Override with `WIZWAND_SWARM_API_BASE_URL` (root URL like `https://dl-api-dev.vhrgateway.com/` is also supported and auto-normalized).
 
 ## Project structure
 
